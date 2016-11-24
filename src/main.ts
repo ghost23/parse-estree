@@ -5,9 +5,22 @@
 
 import { readFileSync, writeFileSync } from 'fs';
 
-const matchDefinitionBlock = /```js([\s\S]*?)```/gm;
-const definitions = /(extend(?=\s))?.*(interface|enum)\s*(\w+)\s*(?:(?:<:\s*)(?:(\w+))(?:(?:,\s*)(\w+))?(?:(?:,\s*)(\w+))?)?\s*\{\s*([\s\S]*?)\s*}/gm;
-const definitionBody = /\s*?(?:(\w+)(?::))(?:(?:\s*([^\[\{]*?))|(?:\s*?\{([\s\S]*?)})|(?:\s*?\[([\s\S]*?)]));/gm;
+const matchDefinitionBlockWithinMarkdown = /```js([\s\S]*?)```/gm;
+
+const m_extend = '(extend(?=\\s))?';
+const m_name = '(\\w+)';
+const m_firstExtenderName = m_name;
+const m_additionalExtenderName = '(?:(?:,\\s*)(\\w+))?';
+const m_extenders = `(?:(?:<:\\s*)${m_firstExtenderName}${m_additionalExtenderName}${m_additionalExtenderName})?`; // Up to three extended interface names possible
+const m_rawbody = '\\{\\s*([\\s\\S]*?)\\s*}';
+const definitions = new RegExp(`${m_extend}.*(interface|enum)\\s*${m_name}\\s*${m_extenders}\\s*${m_rawbody}`, 'gm');
+
+const m_propertyName = '(?:(\\w+)(?::))';
+const m_propertyNonListNonObjectValue = '(?:\\s*([^\\[\\{]*?))';
+const m_propertyObjectValue = '(?:\\s*?\\{([\\s\\S]*?)})';
+const m_propertyListValue = '(?:\\s*?\\[([\\s\\S]*?)])';
+const m_propertyRawValue = `(?:${m_propertyNonListNonObjectValue}|${m_propertyObjectValue}|${m_propertyListValue})`;
+const definitionInterfaceBody = new RegExp(`\\s*?${m_propertyName}${m_propertyRawValue};`, 'gm');
 
 enum DefinitionType {
 	ENUM_DEFINITION, INTERFACE_DEFINITION
@@ -29,7 +42,7 @@ function parseDefinitionDocument(
 
 	let matchedDefinitionBlocks: string[];
 
-	while ((matchedDefinitionBlocks = matchDefinitionBlock.exec(rawDef)) !== null) {
+	while ((matchedDefinitionBlocks = matchDefinitionBlockWithinMarkdown.exec(rawDef)) !== null) {
 
 		let matchedDefinitions: string[];
 		while ((matchedDefinitions = definitions.exec(matchedDefinitionBlocks[1])) !== null) {
@@ -66,7 +79,7 @@ function parseInterfaceDefinitionBody(rawBodyString: string): PropMap {
 	const result: PropMap = {};
 
 	let matchedProperty: string[];
-	while ((matchedProperty = definitionBody.exec(rawBodyString)) !== null) {
+	while ((matchedProperty = definitionInterfaceBody.exec(rawBodyString)) !== null) {
 		if(matchedProperty[2] !== null && matchedProperty[2] !== undefined) {
 			result[matchedProperty[1]] = matchedProperty[2].trim();
 		} else if(matchedProperty[3] !== null && matchedProperty[3] !== undefined) {
@@ -82,12 +95,12 @@ function parseInterfaceDefinitionBody(rawBodyString: string): PropMap {
 function exportAsTypescriptString(definition: Definition): string {
 
 	if(definition.type === DefinitionType.ENUM_DEFINITION) {
-		return `export type ${definition.name}${definition.extendList.length ? ' extends ' + definition.extendList.join(', '):''} =
-	${definition.block};`;
+		return `\texport type ${definition.name}${definition.extendList.length ? ' extends ' + definition.extendList.join(', '):''} =
+		${definition.block};`;
 	} else {
-		return `export interface ${definition.name}${definition.extendList.length ? ' extends ' + definition.extendList.join(', '):''} {
-${Object.keys(definition.block as PropMap).map(elmt => '\t' + elmt + ": " + (definition.block as PropMap)[elmt] + ";").join('\n')}
-}`;
+		return `\texport interface ${definition.name}${definition.extendList.length ? ' extends ' + definition.extendList.join(', '):''} {
+${Object.keys(definition.block as PropMap).map(elmt => '\t\t' + elmt + ": " + (definition.block as PropMap)[elmt] + ";").join('\n')}
+	}`;
 	}
 }
 
@@ -104,8 +117,11 @@ parseDefinitionDocument(es2016MD, nameToDefinitionsMap);
 parseDefinitionDocument(es2017MD, nameToDefinitionsMap);
 
 const allDefinitions = Object.keys(nameToDefinitionsMap).map(key => nameToDefinitionsMap[key]);
+const result = `declare module "estree" {
+${allDefinitions.map(exportAsTypescriptString).join('\n')}
+}`;
 
-writeFileSync('typings/globals/estree/estree.d.ts', allDefinitions.map(exportAsTypescriptString).join('\n'), 'utf8');
+writeFileSync('typings/globals/estree/estree.d.ts', result, 'utf8');
 
 console.log('parsed definitions have been written to: typings/globals/estree/estree.d.ts');
 

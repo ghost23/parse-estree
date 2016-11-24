@@ -6,7 +6,10 @@
 		"noImplicitAny": true,
 		"outDir": "bin"
 	},
-	"files": ["src/main.ts", "typings/index.d.ts"],
+	"files": [
+		"src/main.ts",
+		"typings/index.d.ts"
+	],
 	"exclude": [
 		"node_modules", "estree"
 	]
