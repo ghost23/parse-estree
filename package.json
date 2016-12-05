@@ -1,6 +1,6 @@
 {
   "name": "parse-estree",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Typescript implementation of esprima based javascript parsing.",
   "main": "./bin/main.js",
   "scripts": {
@@ -8,7 +8,9 @@
   },
   "author": "Sven Busse",
   "license": "MIT",
+  "repository": "git@github.com:ghost23/parse-estree.git",
   "dependencies": {
-    "esprima": "^3.1.1"
+    "esprima": "^3.1.1",
+    "lodash": "^4.17.2"
   }
 }

@@ -8,7 +8,8 @@
 	},
 	"files": [
 		"src/main.ts",
-		"typings/index.d.ts"
+		"typings/index.d.ts",
+		"typings/main.d.ts"
 	],
 	"exclude": [
 		"node_modules", "estree"

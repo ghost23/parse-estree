@@ -21,8 +21,10 @@ declare module "estree" {
 		value: string | boolean | null | number | RegExp;
 	}
 	export interface RegExpLiteral extends Literal {
-		pattern: string;
-		flags: string;
+		regex: {
+			pattern: string;
+			flags: string;
+		};
 	}
 	export interface Program extends Node {
 		type: "Program";
@@ -32,7 +34,7 @@ declare module "estree" {
 	export interface Function extends Node {
 		id: Identifier | null;
 		params: Array<Pattern>;
-		body: any;
+		body: BlockStatement;
 		generator: boolean;
 		async: boolean;
 	}
@@ -123,12 +125,7 @@ declare module "estree" {
 		update: Expression | null;
 		body: Statement;
 	}
-	export interface ForIterableStatement extends Statement {
-		left: VariableDeclaration |  Pattern;
-		right: Expression;
-		body: Statement;
-	}
-	export interface ForInStatement extends ForIterableStatement {
+	export interface ForInStatement extends AbstractForInStatement {
 		type: "ForInStatement";
 	}
 	export interface Declaration extends Statement {
@@ -136,7 +133,6 @@ declare module "estree" {
 	}
 	export interface FunctionDeclaration extends Function, Declaration {
 		type: "FunctionDeclaration";
-		body: BlockStatement;
 		id: Identifier;
 	}
 	export interface VariableDeclaration extends Declaration {
@@ -163,18 +159,11 @@ declare module "estree" {
 		type: "ObjectExpression";
 		properties: Array<Property>;
 	}
-	export interface Property extends Node {
+	export interface Property extends AbstractProperty {
 		type: "Property";
-		key: Expression;
-		value: Expression;
-		kind: "init" | "get" | "set";
-		method: boolean;
-		shorthand: boolean;
-		computed: boolean;
 	}
 	export interface FunctionExpression extends Function, Expression {
 		type: "FunctionExpression";
-		body: BlockStatement;
 	}
 	export interface UnaryExpression extends Expression {
 		type: "UnaryExpression";
@@ -235,14 +224,10 @@ declare module "estree" {
 		alternate: Expression;
 		consequent: Expression;
 	}
-	export interface CallableExpression extends Expression {
-		callee: Expression | Super;
-		arguments: Array<Expression | SpreadElement>;
-	}
-	export interface CallExpression extends CallableExpression {
+	export interface CallExpression extends AbstractCallExpression {
 		type: "CallExpression";
 	}
-	export interface NewExpression extends CallableExpression {
+	export interface NewExpression extends AbstractCallExpression {
 		type: "NewExpression";
 	}
 	export interface SequenceExpression extends Expression {
@@ -252,7 +237,7 @@ declare module "estree" {
 	export interface Pattern extends Node {
 
 	}
-	export interface ForOfStatement extends ForIterableStatement {
+	export interface ForOfStatement extends AbstractForInStatement {
 		type: "ForOfStatement";
 	}
 	export interface Super extends Node {
@@ -285,14 +270,13 @@ declare module "estree" {
 	export interface TemplateElement extends Node {
 		type: "TemplateElement";
 		tail: boolean;
-		cooked: string;
-		raw: string;
+		value: {
+			cooked: string;
+			raw: string;
+		};
 	}
-	export interface AssignmentProperty extends Property {
+	export interface AssignmentProperty extends AbstractProperty {
 		type: "Property";
-		value: Pattern;
-		kind: "init";
-		method: false;
 	}
 	export interface ObjectPattern extends Pattern {
 		type: "ObjectPattern";
@@ -382,5 +366,22 @@ declare module "estree" {
 	export interface AwaitExpression extends Expression {
 		type: "AwaitExpression";
 		argument: Expression;
+	}
+	export interface AbstractCallExpression extends Expression {
+		callee: Expression | Super;
+		arguments: Array<Expression | SpreadElement>;
+	}
+	export interface AbstractForInStatement extends Statement {
+		left: VariableDeclaration |  Pattern;
+		right: Expression;
+		body: Statement;
+	}
+	export interface AbstractProperty extends Node {
+		key: Expression;
+		value: Expression;
+		kind: "init" | "get" | "set";
+		method: boolean;
+		shorthand: boolean;
+		computed: boolean;
 	}
 }
