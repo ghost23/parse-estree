@@ -1,6 +1,6 @@
 {
   "name": "parse-estree",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Typescript implementation of esprima based javascript parsing.",
   "main": "./bin/main.js",
   "scripts": {

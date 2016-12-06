@@ -34,7 +34,6 @@ declare module "estree" {
 	export interface Function extends Node {
 		id: Identifier | null;
 		params: Array<Pattern>;
-		body: BlockStatement;
 		generator: boolean;
 		async: boolean;
 	}
@@ -131,7 +130,7 @@ declare module "estree" {
 	export interface Declaration extends Statement {
 
 	}
-	export interface FunctionDeclaration extends Function, Declaration {
+	export interface FunctionDeclaration extends Function, Declaration, FunctionBody {
 		type: "FunctionDeclaration";
 		id: Identifier;
 	}
@@ -162,7 +161,7 @@ declare module "estree" {
 	export interface Property extends AbstractProperty {
 		type: "Property";
 	}
-	export interface FunctionExpression extends Function, Expression {
+	export interface FunctionExpression extends Function, Expression, FunctionBody {
 		type: "FunctionExpression";
 	}
 	export interface UnaryExpression extends Expression {
@@ -383,5 +382,8 @@ declare module "estree" {
 		method: boolean;
 		shorthand: boolean;
 		computed: boolean;
+	}
+	export interface FunctionBody {
+		body: BlockStatement;
 	}
 }

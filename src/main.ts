@@ -242,6 +242,28 @@ function checkForAndExtractOverridenLiteral(definition: Definition, nameToDefini
 	}
 }
 
+// This is a specific manual fix, which at the time seemed to complicated to solve more generally
+function solveArrowFunctionExpressionConflict(nameToDefinitionsMap: { [name: string]: Definition }, allDefinitions: Definition[]): void {
+
+	const functionDefinition: Definition = nameToDefinitionsMap["Function"];
+	const oriFunctionDefinitionBody: PropValue = (functionDefinition.block as PropMap)["body"];
+	functionDefinition.block = omit<PropMap, PropMap>(functionDefinition.block as PropMap, "body");
+
+	const newFunctionBodyDefinition: Definition = {
+		name: "FunctionBodyBlock",
+		type: DefinitionType.INTERFACE_DEFINITION,
+		extendList: [],
+		isExtensionFromExistingInterface: false,
+		block: { "body": oriFunctionDefinitionBody }
+	};
+
+	nameToDefinitionsMap[newFunctionBodyDefinition.name] = newFunctionBodyDefinition;
+	allDefinitions.push(newFunctionBodyDefinition);
+
+	nameToDefinitionsMap["FunctionDeclaration"].extendList.push(newFunctionBodyDefinition.name);
+	nameToDefinitionsMap["FunctionExpression"].extendList.push(newFunctionBodyDefinition.name);
+}
+
 const es5MD: string = readFileSync('./estree/es5.md', 'utf8');
 const es2015MD: string = readFileSync('./estree/es2015.md', 'utf8');
 const es2016MD: string = readFileSync('./estree/es2016.md', 'utf8');
@@ -255,7 +277,12 @@ parseDefinitionDocument(es2016MD, nameToDefinitionsMap);
 parseDefinitionDocument(es2017MD, nameToDefinitionsMap);
 
 const allDefinitions = Object.keys(nameToDefinitionsMap).map(key => nameToDefinitionsMap[key]);
+
+// Corrections
 allDefinitions.forEach((definition: Definition) => { checkForAndExtractOverridenLiteral(definition, nameToDefinitionsMap); });
+solveArrowFunctionExpressionConflict(nameToDefinitionsMap, allDefinitions);
+// End of corrections
+
 const result = `declare module "estree" {
 ${allDefinitions.map(exportDefinitionAsTypescriptString).join('\n')}
 }`;
@@ -264,4 +291,4 @@ writeFileSync('typings/globals/estree/estree.d.ts', result, 'utf8');
 
 console.log('parsed definitions have been written to: typings/globals/estree/estree.d.ts');
 
-// https://regex101.com/r/NIgD49/1
+process.exit(0);
